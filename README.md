@@ -1,61 +1,40 @@
-# myVal Capstone
+# myVal Next-Category Recommendation
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
+Machine learning prototype developed for the myVal Capstone Project.
 
-Machine learning and LLM experimentation for personalised insurance guidance and next-category prediction using myVal data.
+The objective of this project is to recommend the **next household-content category** that may be relevant for a customer to document, using the information already available within myVal.
 
-## Project Organization
+The recommendation is sequential: as the customer adds more assets and the household state evolves, the model can generate a new recommendation.
 
-```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
-├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
-│
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
-│
-├── models             <- Trained and serialized models, model predictions, or model summaries
-│
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
-│
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         my_val_capstone_01 and configuration for tools like black
-│
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-│
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
-│
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
-│
-├── setup.cfg          <- Configuration file for flake8
-│
-└── my_val_capstone_01   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes my_val_capstone_01 a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
-```
+---
 
---------
+## Project Objective
 
+The modelling task is defined as:
+
+> Given the information already documented and analysed for a household, predict the next previously undocumented category that may be relevant for the customer to capture.
+
+The model combines:
+
+- documented household assets;
+- existing myVal AI-analysis outputs;
+- customer and household information;
+- property context;
+- optional property-video information.
+
+The system is designed as a recommendation tool, not as a claim that a category is definitely missing.
+
+---
+
+## Main Workflow
+
+```text
+Customer documents an asset
+        ↓
+myVal AI analyses the asset
+        ↓
+Household state is updated
+        ↓
+Next-category recommendation model
+        ↓
+Top-1 / Top-2 / Top-3 recommendations
