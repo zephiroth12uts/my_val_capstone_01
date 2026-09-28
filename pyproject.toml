@@ -16,6 +16,7 @@ classifiers = [
     
 ]
 dependencies = [
+    "catboost>=1.2.10",
     "ipython",
     "jupyterlab",
     "loguru",
@@ -23,6 +24,7 @@ dependencies = [
     "mkdocs",
     "notebook",
     "numpy",
+    "openpyxl>=3.1.5",
     "pandas",
     "pip",
     "pytest",
