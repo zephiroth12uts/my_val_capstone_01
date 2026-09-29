@@ -17,6 +17,7 @@ classifiers = [
 ]
 dependencies = [
     "catboost>=1.2.10",
+    "fastapi>=0.141.1",
     "ipython",
     "jupyterlab",
     "loguru",
@@ -33,6 +34,7 @@ dependencies = [
     "scikit-learn",
     "tqdm",
     "typer",
+    "uvicorn>=0.54.0",
 ]
 requires-python = "~=3.12.0"
 
