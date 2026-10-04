@@ -1,0 +1,5 @@
+model,val_MAE,val_WAPE_%,trees,search_val_MAE_logscale,searched_max_trees
+xgb_baseline_log,35671,47.4,160,,
+xgb_log_tuned,37535,49.9,20,0.624,418.0
+lgbm_baseline_log,37191,49.4,45,,
+lgbm_log_tuned,36793,48.9,70,0.6667,154.0

@@ -19,7 +19,9 @@ dependencies = [
     "catboost>=1.2.10",
     "fastapi>=0.141.1",
     "ipython",
+    "joblib",
     "jupyterlab",
+    "lightgbm",
     "loguru",
     "matplotlib",
     "mkdocs",
@@ -28,26 +30,29 @@ dependencies = [
     "openpyxl>=3.1.5",
     "pandas",
     "pip",
+    "pyarrow",
     "pytest",
     "python-dotenv",
     "ruff",
     "scikit-learn",
+    "scipy",
     "tqdm",
     "typer",
     "uvicorn>=0.54.0",
+    "xgboost==3.2.0",  # pinned: the tuning search of the regression selects other candidates with other XGBoost versions
 ]
 requires-python = "~=3.12.0"
 
 
 [tool.ruff]
 line-length = 99
-src = ["my_val_capstone_01"]
-include = ["pyproject.toml", "my_val_capstone_01/**/*.py"]
+src = ["my_val_capstone_01", "my_val_regression"]
+include = ["pyproject.toml", "my_val_capstone_01/**/*.py", "my_val_regression/**/*.py"]
 
 [tool.ruff.lint]
 extend-select = ["I"]  # Add import sorting
 
 [tool.ruff.lint.isort]
-known-first-party = ["my_val_capstone_01"]
+known-first-party = ["my_val_capstone_01", "my_val_regression"]
 force-sort-within-sections = true
 

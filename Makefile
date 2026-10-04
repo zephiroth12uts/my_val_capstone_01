@@ -68,6 +68,30 @@ data: requirements
 	$(PYTHON_INTERPRETER) my_val_capstone_01/dataset.py
 
 
+## Build the modelling tables of the regression (needs data/processed/model_state.csv from 02_fm_target_definition)
+.PHONY: regression_dataset
+regression_dataset:
+	$(PYTHON_INTERPRETER) -m my_val_regression.dataset
+
+
+## Train the regression models and learn the blend weight and the margins
+.PHONY: regression_train
+regression_train: regression_dataset
+	$(PYTHON_INTERPRETER) -m my_val_regression.modeling.train
+
+
+## Add the five regression columns to model_state.csv
+.PHONY: regression_features
+regression_features: regression_train
+	$(PYTHON_INTERPRETER) -m my_val_regression.features
+
+
+## Draw the regression figures (needs the results of notebook 05_ky_test_evaluation)
+.PHONY: regression_plots
+regression_plots:
+	$(PYTHON_INTERPRETER) -m my_val_regression.plots
+
+
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################
