@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import typer
 
-from my_val_regression.config import (
+from my_val_capstone_01.regression.config import (
     CLASSIFICATION_PROCESSED_DIR,
     INTERIM_DIR,
     MODELS_DIR,
@@ -122,8 +122,8 @@ def load_regression_models(models_dir: Path = MODELS_DIR) -> tuple:
     """Load the two saved regression models and the frozen blend weight and margins."""
     xgb_model = joblib.load(models_dir / "xgb_log_model.joblib")
     lgbm_model = joblib.load(models_dir / "lgbm_log_model.joblib")
-    frozen = pd.read_csv(models_dir / "ensemble_weight_and_margins.csv")
-    return xgb_model, lgbm_model, frozen.set_index("item")["value"]
+    frozen = joblib.load(models_dir / "ensemble_weight_and_margins.joblib")  # dict: blend weight, margin per N, confidence
+    return xgb_model, lgbm_model, pd.Series(frozen)
 
 
 def build_regression_state_features(
@@ -314,7 +314,7 @@ def main(
     diagnostics_path: Path = INTERIM_DIR / "regression_state_diagnostics.csv",
 ):
     """Write model_state.csv plus the five regression columns (nothing is trained)."""
-    from my_val_regression.dataset import rebuild_state_split
+    from my_val_capstone_01.regression.dataset import rebuild_state_split
 
     logger.info("Merging the regression into the classification states...")
     model_state = pd.read_csv(model_state_path, float_precision="round_trip")

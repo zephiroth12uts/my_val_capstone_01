@@ -6,6 +6,7 @@ model is fitted here. They repeat the main charts of notebooks 03_ky, 04_ky and 
 
 from pathlib import Path
 
+import joblib
 from loguru import logger
 import matplotlib
 from sklearn.metrics import mean_absolute_error
@@ -16,7 +17,7 @@ import numpy as np
 import pandas as pd
 import typer
 
-from my_val_regression.config import (
+from my_val_capstone_01.regression.config import (
     FIGURES_DIR,
     INTERIM_DIR,
     MODELS_DIR,
@@ -30,7 +31,9 @@ plt.rcParams.update({"axes.spines.top": False, "axes.spines.right": False})
 
 def plot_tree_curves(reports_dir: Path = REPORTS_DIR, models_dir: Path = MODELS_DIR):
     """Validation MAE against the number of trees for the two tuned models."""
-    hyperparameters = pd.read_csv(models_dir / "final_hyperparameters.csv").set_index("model")
+    hyperparameters = pd.DataFrame.from_dict(
+        joblib.load(models_dir / "final_hyperparameters.joblib"), orient="index"
+    )
     panels = [
         ("XGBoost tuned", "tree_curve_xgboost.csv", "xgboost_log_tuned"),
         ("LightGBM tuned", "tree_curve_lightgbm.csv", "lightgbm_log_tuned"),

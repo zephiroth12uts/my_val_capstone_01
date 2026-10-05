@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-PROJ_ROOT = Path(__file__).resolve().parents[1]
+PROJ_ROOT = Path(__file__).resolve().parents[2]
 
 DATA_DIR = PROJ_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
@@ -13,5 +13,5 @@ CLASSIFICATION_PROCESSED_DIR = DATA_DIR / "processed" / "classification"
 
 MODELS_DIR = PROJ_ROOT / "models" / "regression"
 
-REPORTS_DIR = PROJ_ROOT / "reports" / "regression"
-FIGURES_DIR = PROJ_ROOT / "reports" / "figures" / "regression"
+REPORTS_DIR = PROJ_ROOT / "notebooks" / "regression" / "reports"
+FIGURES_DIR = PROJ_ROOT / "notebooks" / "regression" / "reports" / "figures"

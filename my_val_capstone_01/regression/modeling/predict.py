@@ -9,8 +9,8 @@ from functools import lru_cache
 import numpy as np
 import pandas as pd
 
-from my_val_regression.config import MODELS_DIR
-from my_val_regression.features import CHECKPOINTS, floor_to_checkpoint, load_regression_models
+from my_val_capstone_01.regression.config import MODELS_DIR
+from my_val_capstone_01.regression.features import CHECKPOINTS, floor_to_checkpoint, load_regression_models
 
 NON_MODEL_COLUMNS = [
     "Property_ID",

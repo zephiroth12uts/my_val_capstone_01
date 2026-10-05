@@ -19,7 +19,7 @@ from sklearn.model_selection import RandomizedSearchCV
 import typer
 from xgboost import XGBRegressor
 
-from my_val_regression.config import INTERIM_DIR, MODELS_DIR, PROCESSED_DIR, REPORTS_DIR
+from my_val_capstone_01.regression.config import INTERIM_DIR, MODELS_DIR, PROCESSED_DIR, REPORTS_DIR
 
 app = typer.Typer()
 
@@ -248,14 +248,24 @@ def main(
         directory.mkdir(parents=True, exist_ok=True)
     joblib.dump(fitted["xgb"]["model"], models_dir / "xgb_log_model.joblib")
     joblib.dump(fitted["lgbm"]["model"], models_dir / "lgbm_log_model.joblib")
-    frozen.to_csv(models_dir / "ensemble_weight_and_margins.csv", index=False)
+    joblib.dump(dict(zip(frozen["item"], frozen["value"])), models_dir / "ensemble_weight_and_margins.joblib")
     hyperparameters = pd.DataFrame(
         [
             {"model": "xgboost_log_tuned", **fitted["xgb"]["hyperparameters"]},
             {"model": "lightgbm_log_tuned", **fitted["lgbm"]["hyperparameters"]},
         ]
     )
-    hyperparameters.to_csv(models_dir / "final_hyperparameters.csv", index=False)
+    joblib.dump(
+        {
+            r["model"]: {
+                k: (int(v) if isinstance(v, float) and v.is_integer() else v)
+                for k, v in r.items()
+                if k != "model" and pd.notna(v)
+            }
+            for r in hyperparameters.to_dict("records")
+        },
+        models_dir / "final_hyperparameters.joblib",
+    )
     fitted["results"].to_csv(reports_dir / "model_results.csv")
     fitted["xgb"]["curve"].assign(model="xgboost").to_csv(
         reports_dir / "tree_curve_xgboost.csv", index=False

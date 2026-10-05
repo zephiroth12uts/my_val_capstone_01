@@ -14,6 +14,6 @@ The two models depend on each other, so the notebooks are run in this order:
 4. `notebooks/classification/04_fm_modelling.ipynb` (about 50 minutes) and then `05_fm_inference.ipynb`.
 
 The regression code can also be run from the project root with
-`python -m my_val_regression.dataset`, `python -m my_val_regression.modeling.train`,
-`python -m my_val_regression.features` and `python -m my_val_regression.plots`.
+`python -m my_val_capstone_01.regression.dataset`, `python -m my_val_capstone_01.regression.modeling.train`,
+`python -m my_val_capstone_01.regression.features` and `python -m my_val_capstone_01.regression.plots`.
 See `regression.md` for the details of every notebook and folder.

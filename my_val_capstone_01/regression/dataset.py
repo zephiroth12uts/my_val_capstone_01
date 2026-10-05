@@ -14,8 +14,8 @@ import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
 import typer
 
-from my_val_regression.config import INTERIM_DIR, PROCESSED_DATA_DIR, PROCESSED_DIR, RAW_DATA_DIR
-from my_val_regression.features import featurize_sample
+from my_val_capstone_01.regression.config import INTERIM_DIR, PROCESSED_DATA_DIR, PROCESSED_DIR, RAW_DATA_DIR
+from my_val_capstone_01.regression.features import featurize_sample
 
 app = typer.Typer()
 

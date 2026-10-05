@@ -1,3 +1,0 @@
-model,colsample_bytree,learning_rate,max_depth,min_child_weight,n_estimators,reg_alpha,reg_lambda,subsample,searched_max_trees,min_child_samples,num_leaves,subsample_freq
-xgboost_log_tuned,0.8125418526272592,0.1667841852669309,6,10.0,20,0.01,5,0.8858380416719809,418,,,
-lightgbm_log_tuned,0.7888859700647797,0.04468233132210749,7,,70,0.1,2,0.7024273291045295,154,7.0,40.0,1.0

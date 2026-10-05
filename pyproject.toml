@@ -46,13 +46,13 @@ requires-python = "~=3.12.0"
 
 [tool.ruff]
 line-length = 99
-src = ["my_val_capstone_01", "my_val_regression"]
-include = ["pyproject.toml", "my_val_capstone_01/**/*.py", "my_val_regression/**/*.py"]
+src = ["my_val_capstone_01"]
+include = ["pyproject.toml", "my_val_capstone_01/**/*.py"]
 
 [tool.ruff.lint]
 extend-select = ["I"]  # Add import sorting
 
 [tool.ruff.lint.isort]
-known-first-party = ["my_val_capstone_01", "my_val_regression"]
+known-first-party = ["my_val_capstone_01"]
 force-sort-within-sections = true
 

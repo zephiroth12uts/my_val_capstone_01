@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import pytest
 
-from my_val_regression.config import (
+from my_val_capstone_01.regression.config import (
     CLASSIFICATION_PROCESSED_DIR,
     INTERIM_DIR,
     MODELS_DIR,
@@ -11,8 +11,8 @@ from my_val_regression.config import (
     PROCESSED_DIR,
     RAW_DATA_DIR,
 )
-from my_val_regression.features import floor_to_checkpoint
-from my_val_regression.modeling.predict import checkpoint_for, predict_household_value
+from my_val_capstone_01.regression.features import floor_to_checkpoint
+from my_val_capstone_01.regression.modeling.predict import checkpoint_for, predict_household_value
 
 WORKBOOK = RAW_DATA_DIR / "myVal_Synthetic_Datasets_release_v2.xlsx"
 MODEL_STATE = PROCESSED_DATA_DIR / "model_state.csv"
@@ -41,7 +41,7 @@ def test_predictions_equal_the_saved_test_predictions():
 
 @pytest.mark.skipif(not (WORKBOOK.exists() and MODEL_STATE.exists()), reason="needs the data")
 def test_state_features_equal_the_notebook_output(tmp_path):
-    from my_val_regression.features import main
+    from my_val_capstone_01.regression.features import main
 
     main(
         model_state_path=MODEL_STATE,
@@ -58,7 +58,7 @@ def test_state_features_equal_the_notebook_output(tmp_path):
 @SLOW
 @pytest.mark.skipif(not (WORKBOOK.exists() and MODEL_STATE.exists()), reason="needs the data")
 def test_modelling_tables_equal_the_notebook_output(tmp_path):
-    from my_val_regression.dataset import main
+    from my_val_capstone_01.regression.dataset import main
 
     main(WORKBOOK, MODEL_STATE, tmp_path / "interim", tmp_path / "processed")
     for name in ("train_df", "val_df", "test_df", "unlisted_df"):

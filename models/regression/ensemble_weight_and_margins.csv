@@ -1,8 +1,0 @@
-item,value
-blend_weight_xgboost,0.28
-margin_N=10,0.827846991853316
-margin_N=20,0.5110750644087545
-margin_N=30,0.4257845048740497
-margin_N=50,0.5903092261343441
-confidence_level,0.7
-pool_n30_n50,0.0

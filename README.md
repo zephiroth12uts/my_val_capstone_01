@@ -90,18 +90,17 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 │   └── regression/
 │
 ├── my_val_capstone_01/
-│   └── modeling/
-│       ├── predict.py
-│       └── train.py
-│
-├── my_val_regression/
-│   ├── config.py
-│   ├── dataset.py
-│   ├── features.py
-│   ├── plots.py
-│   └── modeling/
-│       ├── predict.py
-│       └── train.py
+│   ├── modeling/
+│   │   ├── predict.py
+│   │   └── train.py
+│   └── regression/
+│       ├── config.py
+│       ├── dataset.py
+│       ├── features.py
+│       ├── plots.py
+│       └── modeling/
+│           ├── predict.py
+│           └── train.py
 │
 ├── notebooks/
 │   ├── classification/
@@ -118,12 +117,13 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 │       ├── 04_ky_ensemble_and_intervals.ipynb
 │       ├── 05_ky_test_evaluation.ipynb
 │       ├── 06_ky_split_and_sampling_audit.ipynb
-│       └── 07_ky_prediction_table.ipynb
+│       ├── 07_ky_prediction_table.ipynb
+│       └── reports/
+│           ├── figures/
+│           └── (result tables of the regression notebooks)
 │
 ├── reports/
-│   ├── figures/
-│   │   └── regression/
-│   └── regression/
+│   └── figures/
 │
 ├── docs/
 │   └── docs/
@@ -135,7 +135,7 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 └── README.md
 ```
 
-In the preparation folder `Develop_02_preparing`, the folder `my_val_capstone_01/` is only a placeholder, because the front end is not part of this work. In the team repository it keeps its own files.
+The regression code is the subpackage `my_val_capstone_01/regression/`, so it is part of the same Python package as the team's front end and inference code. The team's own files in `my_val_capstone_01/` are not changed.
 
 ### Which folder belongs to which model
 
@@ -151,9 +151,9 @@ In the preparation folder `Develop_02_preparing`, the folder `my_val_capstone_01
 | `models/*.joblib` in the root            |                                                              | the original Top-1 and ranking models used by the front end |                                                              |
 | `notebooks/regression/`                  | `01_ky` to `07_ky`                                       |                                                             |                                                              |
 | `notebooks/classification/`              |                                                              | `01_fm`, `02_fm`, `04_fm`, `05_fm`                  | `03_ky` merges the regression into the classification data |
-| `my_val_regression/`                     | the reusable regression code                                 |                                                             |                                                              |
-| `my_val_capstone_01/`                    |                                                              | front end and inference of the recommendation model         |                                                              |
-| `reports/`                               | result tables and figures                                    |                                                             |                                                              |
+| `my_val_capstone_01/regression/`         | the reusable regression code                                 |                                                             |                                   |
+| `my_val_capstone_01/` (other files)      |                                                              | front end and inference of the recommendation model         |                                   |
+| `notebooks/regression/reports/`          | result tables and figures of the regression                  |                                                             |                                   |
 | `tests/`                                 | `test_regression.py`                                       | `test_data.py` (placeholder)                              |                                                              |
 | `pyproject.toml`, `uv.lock`, `docs/` |                                                              |                                                             | shared                                                       |
 
@@ -322,7 +322,7 @@ The notebook:
 - learns one interval margin for each N group (0.828, 0.511, 0.426 and 0.590)
 - explains why the margins are not learned on the training set
 - shows the success rate per N on the training rows and the validation rows side by side
-- saves the frozen weight and margins in `models/regression/ensemble_weight_and_margins.csv`
+- saves the frozen weight and margins in `models/regression/ensemble_weight_and_margins.joblib`
 
 The interval on the validation set is in-sample, so it is a description of the fit and not a result.
 
@@ -374,10 +374,10 @@ The two pipelines depend on each other, so the notebooks must be run in this ord
 The regression code can also be run from the project root:
 
 ```text
-python -m my_val_regression.dataset
-python -m my_val_regression.modeling.train
-python -m my_val_regression.features
-python -m my_val_regression.plots
+python -m my_val_capstone_01.regression.dataset
+python -m my_val_capstone_01.regression.modeling.train
+python -m my_val_capstone_01.regression.features
+python -m my_val_capstone_01.regression.plots
 ```
 
 The same four steps are available as Makefile rules (`make regression_dataset`, `make regression_train`, `make regression_features` and `make regression_plots`), and each rule runs the ones it depends on.
@@ -632,7 +632,7 @@ These numbers need to be read with care:
 Reusable inference logic is implemented in:
 
 ```text
-my_val_regression/modeling/predict.py
+my_val_capstone_01/regression/modeling/predict.py
 ```
 
 `predict_household_value` receives one basket and returns the estimate, the two model predictions and the 70% interval. `checkpoint_for` returns the basket size that a number of documented items reaches.
