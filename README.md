@@ -6,7 +6,7 @@ The objective of this project is to recommend the **next household-content categ
 
 The recommendation is sequential: as the customer adds more assets and the household state evolves, the model can generate a new recommendation.
 
-The repository also contains a second model, the **household contents-value regression**, which estimates the total value of a household's contents from the items already documented. It is described in its own sections below and can optionally feed the recommendation model with five additional columns.
+The repository also contains a second model, the **household contents-value regression**, which estimates the total value of a household's contents from the items already documented. It is described in its own sections below. It can supply five optional columns to the recommendation model (code in `my_val_capstone_01/regression/features.py`), but the notebook that merges them is not part of this branch and the classification files are the team's originals.
 
 ---
 
@@ -72,26 +72,31 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 
 ```text
 .
-├── data/
-│   ├── interim/
-│   │   └── regression/
+├── data/                                  (not tracked by git)
+│   ├── raw/
+│   │   └── myVal_Synthetic_Datasets_release_v2.xlsx
 │   ├── processed/
-│   │   ├── model_state.csv
-│   │   ├── classification/
-│   │   │   └── model_state_with_reg.csv
-│   │   └── regression/
-│   └── raw/
-│       └── myVal_Synthetic_Datasets_release_v2.xlsx
+│   │   ├── model_state.csv                (built by 02_fm_target_definition, also read by the regression)
+│   │   └── regression/                    (train, validation, test and unlisted tables, prediction table)
+│   └── interim/
+│       └── regression/                    (sheet copies, property split, predictions)
 │
 ├── models/
 │   ├── next_category_top1_random_forest.joblib
 │   ├── next_category_ranking_random_forest.joblib
-│   ├── classification/
 │   └── regression/
+│       ├── xgb_log_model.joblib
+│       ├── lgbm_log_model.joblib
+│       ├── final_hyperparameters.joblib
+│       └── ensemble_weight_and_margins.joblib
+│
+├── modeling/
+│   └── predict.py                         (recommendation inference)
 │
 ├── my_val_capstone_01/
+│   ├── config.py, dataset.py, features.py, plots.py   (project template files)
 │   ├── modeling/
-│   │   ├── predict.py
+│   │   ├── predict.py                     (recommendation inference)
 │   │   └── train.py
 │   └── regression/
 │       ├── config.py
@@ -103,13 +108,11 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 │           └── train.py
 │
 ├── notebooks/
-│   ├── classification/
-│   │   ├── 01_fm_data_inventory.ipynb
-│   │   ├── 02_fm_target_definition.ipynb
-│   │   ├── 03_ky_regression_feature_merging.ipynb
-│   │   ├── 04_fm_modelling.ipynb
-│   │   ├── 05_fm_inference.ipynb
-│   │   └── 06_old_vs_new_comparison.md
+│   ├── 01_fm_data_inventory.ipynb
+│   ├── 02_fm_target_definition.ipynb
+│   ├── 03_fm_modelling.ipynb
+│   ├── 04_fm_inference.ipynb
+│   ├── 05_fm_demo.ipynb
 │   └── regression/
 │       ├── 01_ky_eda_dataset.ipynb
 │       ├── 02_ky_data_preparation.ipynb
@@ -122,14 +125,15 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 │           ├── figures/
 │           └── (result tables of the regression notebooks)
 │
-├── reports/
-│   └── figures/
-│
 ├── docs/
 │   └── docs/
 │       └── regression.md
 │
+├── server.py, index.html                  (web front end of the recommendation model)
 ├── tests/
+│   ├── test_regression.py
+│   ├── regression_conftest.py
+│   └── test_data.py                       (placeholder)
 ├── pyproject.toml
 ├── uv.lock
 └── README.md
@@ -139,29 +143,30 @@ The regression code is the subpackage `my_val_capstone_01/regression/`, so it is
 
 ### Which folder belongs to which model
 
-| Folder                                     | Regression                                                   | Classification (next category)                              | Both                                                         |
-| ------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------ |
-| `data/raw/`                              |                                                              |                                                             | the source workbook                                          |
-| `data/interim/regression/`               | sheet copies, property split, predictions, state diagnostics |                                                             |                                                              |
-| `data/processed/model_state.csv`         | read to rebuild the split                                    | built by`02_fm_target_definition`                         | shared input                                                 |
-| `data/processed/regression/`             | modelling tables and prediction table                        |                                                             |                                                              |
-| `data/processed/classification/`         |                                                              | `model_state_with_reg.csv`                                |                                                              |
-| `models/regression/`                     | two models, blend weight, margins, hyperparameters           |                                                             |                                                              |
-| `models/classification/`                 |                                                              | Random Forest models fitted with the regression columns     |                                                              |
-| `models/*.joblib` in the root            |                                                              | the original Top-1 and ranking models used by the front end |                                                              |
-| `notebooks/regression/`                  | `01_ky` to `07_ky`                                       |                                                             |                                                              |
-| `notebooks/classification/`              |                                                              | `01_fm`, `02_fm`, `04_fm`, `05_fm`                  | `03_ky` merges the regression into the classification data |
-| `my_val_capstone_01/regression/`         | the reusable regression code                                 |                                                             |                                   |
-| `my_val_capstone_01/` (other files)      |                                                              | front end and inference of the recommendation model         |                                   |
-| `notebooks/regression/reports/`          | result tables and figures of the regression                  |                                                             |                                   |
-| `tests/`                                 | `test_regression.py`                                       | `test_data.py` (placeholder)                              |                                                              |
-| `pyproject.toml`, `uv.lock`, `docs/` |                                                              |                                                             | shared                                                       |
+| Folder or file                                     | Regression                                                   | Classification (next category)                    | Both                         |
+| -------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------- | ---------------------------- |
+| `data/raw/`                                        |                                                              |                                                   | the source workbook          |
+| `data/processed/model_state.csv`                   | read to rebuild the split                                    | built by `02_fm_target_definition`                | shared input                 |
+| `data/processed/regression/`                       | modelling tables and prediction table                        |                                                   |                              |
+| `data/interim/regression/`                         | sheet copies, property split, predictions, state diagnostics |                                                   |                              |
+| `models/regression/`                               | two models, hyperparameters, blend weight and margins (all joblib) |                                             |                              |
+| `models/*.joblib` in the root                      |                                                              | the Top-1 and ranking models used by the front end |                             |
+| `notebooks/01_fm` to `05_fm`                       |                                                              | the team's classification notebooks               |                              |
+| `notebooks/regression/`                            | `01_ky` to `07_ky`, with `reports/` and its figures          |                                                   |                              |
+| `my_val_capstone_01/regression/`                   | the reusable regression code                                 |                                                   |                              |
+| `my_val_capstone_01/` (other files), `modeling/`, `server.py`, `index.html` |                                             | inference and front end of the recommendation model |                           |
+| `tests/`                                           | `test_regression.py`, `regression_conftest.py`               | `test_data.py` (placeholder)                      |                              |
+| `pyproject.toml`, `uv.lock`, `docs/`               |                                                              |                                                   | shared                       |
+
+The regression only reads `data/processed/model_state.csv` of the classification side. It does not change any classification file.
 
 ---
 
 ## Notebook Overview
 
-### Classification notebooks (`notebooks/classification/`)
+### Classification notebooks (`notebooks/`)
+
+These are the team's original classification notebooks. The regression does not change them.
 
 #### `01_fm_data_inventory.ipynb`
 
@@ -169,11 +174,11 @@ Initial exploration of the source workbook.
 
 Main tasks:
 
-- workbook and table inspection
-- key and relationship validation
-- category distribution analysis
-- temporal sequence exploration
-- AI-analysis and video coverage checks
+- workbook and table inspection;
+- key and relationship validation;
+- category distribution analysis;
+- temporal sequence exploration;
+- AI-analysis and video coverage checks.
 
 #### `02_fm_target_definition.ipynb`
 
@@ -183,11 +188,11 @@ The target was defined as the **next previously undocumented category** for a pr
 
 This notebook also:
 
-- reconstructs historical household states
-- handles simultaneous category events
-- prevents future information from entering the predictors
-- combines asset, AI, customer, property and video information
-- creates the final processed modelling dataset
+- reconstructs historical household states;
+- handles simultaneous category events;
+- prevents future information from entering the predictors;
+- combines asset, AI, customer, property and video information;
+- creates the final processed modelling dataset.
 
 Final processed dataset:
 
@@ -197,23 +202,9 @@ Final processed dataset:
 60 columns
 ```
 
-#### `03_ky_regression_feature_merging.ipynb`
+#### `03_fm_modelling.ipynb`
 
-Bridge between the two models. It applies the saved regression models to every classification state and adds five columns to `model_state.csv`, without any training:
-
-| Column                  | Meaning                                                                                                     |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `documented_value_nv` | value documented at the prediction time for non-vehicle items                                               |
-| `reg_pred_total_nv`   | regression estimate of the household total, never below the documented value (-1 when there is no estimate) |
-| `reg_pred_gap_nv`     | estimated value not yet documented (-1 when there is no estimate)                                           |
-| `reg_completeness_nv` | documented value divided by the estimated total (-1 when there is no estimate)                              |
-| `reg_available`       | 1 if at least 10 non-vehicle items with a value are documented, otherwise 0                                 |
-
-The estimate uses the earliest 10, 20, 30 or 50 items documented by the prediction time, so no item from the future enters a state. The result is saved as `data/processed/classification/model_state_with_reg.csv` (431 rows and 65 columns).
-
-#### `04_fm_modelling.ipynb`
-
-Model development and evaluation. This notebook is `03_fm_modelling.ipynb` of the team's original numbering. In this repository it reads `model_state_with_reg.csv`, so the five regression columns are predictors of every model, and it saves its models to `models/classification/`.
+Model development and evaluation.
 
 The dataset was split by `Property_ID` to ensure that historical states from the same household did not appear across train, validation and test partitions.
 
@@ -228,34 +219,30 @@ Models evaluated included:
 
 The notebook also includes:
 
-- overfitting analysis
-- grouped cross-validation
-- hyperparameter tuning
-- AI-feature ablation
-- feature importance
-- permutation importance
-- final holdout evaluation
+- overfitting analysis;
+- grouped cross-validation;
+- hyperparameter tuning;
+- AI-feature ablation;
+- feature importance;
+- permutation importance;
+- final holdout evaluation.
 
-#### `05_fm_inference.ipynb`
+#### `04_fm_inference.ipynb`
 
-Validation of the persisted models and reusable inference function. This notebook is `04_fm_inference.ipynb` of the team's original numbering.
+Validation of the persisted models and reusable inference function.
 
 The inference pipeline returns:
 
-- Top-1 recommended category
-- Top-2 ranked recommendations
-- Top-3 ranked recommendations
-- predicted probabilities
+- Top-1 recommended category;
+- Top-2 ranked recommendations;
+- Top-3 ranked recommendations;
+- predicted probabilities.
 
 Reusable inference logic is located in:
 
 ```text
 my_val_capstone_01/modeling/predict.py
 ```
-
-#### `06_old_vs_new_comparison.md`
-
-Comparison of the classification results with and without the regression columns, including the controlled check and the model choice (see below).
 
 ### Regression notebooks (`notebooks/regression/`)
 
@@ -310,7 +297,7 @@ The notebook includes:
 - tuned models fitted on all of train, with the number of trees chosen on the validation curve averaged over 8 seeds
 - validation curves, validation metrics in dollars and the final hyperparameters
 
-The target is modelled on the `log1p` scale and all metrics are converted back to dollars. The test set is not used in this notebook. The models are saved to `models/regression/`.
+The target is modelled on the `log1p` scale and all metrics are converted back to dollars. The test set is not used in this notebook. The two models and the final hyperparameters are saved as joblib files in `models/regression/` (`xgb_log_model.joblib`, `lgbm_log_model.joblib` and `final_hyperparameters.joblib`); there is no CSV copy.
 
 #### `04_ky_ensemble_and_intervals.ipynb`
 
@@ -322,7 +309,7 @@ The notebook:
 - learns one interval margin for each N group (0.828, 0.511, 0.426 and 0.590)
 - explains why the margins are not learned on the training set
 - shows the success rate per N on the training rows and the validation rows side by side
-- saves the frozen weight and margins in `models/regression/ensemble_weight_and_margins.joblib`
+- saves the frozen weight and margins as one dictionary in `models/regression/ensemble_weight_and_margins.joblib`, which notebooks 05, 06 and 07 and the inference code read
 
 The interval on the validation set is in-sample, so it is a description of the fit and not a result.
 
@@ -337,7 +324,7 @@ The notebook applies the frozen weight and margins to the test set and reports:
 - the success rate at row level and at household level, with definitions and an example
 - train, validation and test side by side
 
-Nothing is tuned or changed after this notebook has been run.
+The result tables and figures are saved in `notebooks/regression/reports/`. Nothing is tuned or changed after this notebook has been run.
 
 #### `06_ky_split_and_sampling_audit.ipynb`
 
@@ -364,23 +351,21 @@ The notebook predicts every basket row of the four data sets and saves the estim
 
 ## Run Order
 
-The two pipelines depend on each other, so the notebooks must be run in this order:
+The regression reads one file of the classification side, so the notebooks are run in this order:
 
-1. `notebooks/classification/02_fm_target_definition.ipynb` creates `data/processed/model_state.csv` from the raw workbook.
-2. `notebooks/regression/01_ky` to `07_ky` build and evaluate the regression. Notebook `02_ky` reads `model_state.csv` to reproduce the classification split.
-3. `notebooks/classification/03_ky_regression_feature_merging.ipynb` creates `model_state_with_reg.csv` from the saved regression models.
-4. `notebooks/classification/04_fm_modelling.ipynb` (about 50 minutes) and then `05_fm_inference.ipynb`.
+1. `notebooks/02_fm_target_definition.ipynb` creates `data/processed/model_state.csv` from the raw workbook.
+2. `notebooks/regression/01_ky` to `07_ky` build and evaluate the regression. Notebook `02_ky` reads `model_state.csv` to reproduce the classification split. Notebook `03_ky` saves the two models and the final hyperparameters, and notebook `04_ky` saves the blend weight and margins, all as joblib files in `models/regression/`. Notebooks `05_ky` to `07_ky` read those files and need `04_ky` to be run first.
+3. The classification notebooks `notebooks/01_fm` to `05_fm` are run as described in their own section. The regression is not needed for them.
 
 The regression code can also be run from the project root:
 
 ```text
 python -m my_val_capstone_01.regression.dataset
 python -m my_val_capstone_01.regression.modeling.train
-python -m my_val_capstone_01.regression.features
 python -m my_val_capstone_01.regression.plots
 ```
 
-The same four steps are available as Makefile rules (`make regression_dataset`, `make regression_train`, `make regression_features` and `make regression_plots`), and each rule runs the ones it depends on.
+The same steps are available as Makefile rules (`make regression_dataset`, `make regression_train` and `make regression_plots`). `python -m my_val_capstone_01.regression.features` (rule `make regression_features`) is optional: it adds the five regression columns to the recommendation states and writes `data/processed/classification/model_state_with_reg.csv`, which no notebook of this branch uses.
 
 The data folder is not tracked by git, so the raw workbook has to be placed in `data/raw/` first.
 
@@ -641,22 +626,9 @@ my_val_capstone_01/regression/modeling/predict.py
 
 ## Regression Columns In The Classification Model
 
-The five regression columns were added to the recommendation dataset (`model_state_with_reg.csv`) and the modelling notebook was run again without any other change.
+The regression can add five columns to the recommendation states (`build_regression_state_features` in `my_val_capstone_01/regression/features.py`). An estimate needs at least 10 documented items, so only a small share of the states (71 of 431) have one, and the other states carry -1.
 
-Only 71 of the 431 states (16.5%) have a regression estimate, because an estimate needs at least 10 documented items. The other states carry -1. By split, 53 of 309 training states, 10 of 67 validation states and 8 of 55 test states have an estimate.
-
-Final holdout results of the two runs:
-
-| Measure        | Original columns | With the five regression columns |
-| -------------- | ---------------- | -------------------------------- |
-| Top-1 accuracy | 0.5091           | 0.5091                           |
-| Macro F1       | 0.3223           | 0.3257                           |
-| Top-2 accuracy | 0.7091           | 0.7818                           |
-| Top-3 accuracy | 0.8364           | 0.8545                           |
-
-The differences are small compared with the noise of a test set of 55 states, and the two runs also used different library versions. A controlled check in the same environment, with the same seeds and only the five columns different, showed no consistent benefit over 20 seeds. Validation differences between the two versions were smaller than the variation between seeds and had mixed signs.
-
-**Recommendation:** keep the original recommendation model as the model to use, and keep the household-value regression as a separate estimate. The regression columns should be reconsidered when more household histories are available. The full comparison is in `notebooks/classification/06_old_vs_new_comparison.md`.
+An earlier experiment with these columns showed no consistent benefit for the recommendation model in a controlled check over 20 seeds. The original recommendation model therefore stays as it is, and the household-value regression is a separate estimate. The notebooks of that experiment are not part of this branch, and the classification files are the team's originals. The columns should be reconsidered when more household histories are available.
 
 ---
 
@@ -713,7 +685,7 @@ uv.lock
 
 XGBoost is pinned because the random search of the regression selects other candidates with other XGBoost versions. After changing `pyproject.toml`, the lock file has to be regenerated with `uv lock`.
 
-The regression tests are run with `pytest tests/test_regression.py`, and the slow check of the modelling tables is included when the environment variable `RUN_SLOW_TESTS` is set to 1.
+The regression tests are run with `pytest tests/test_regression.py` from the project root (`python -m pytest tests/test_regression.py`). The test that compares the state features reads `data/processed/classification/model_state_with_reg.csv`, which is created by `python -m my_val_capstone_01.regression.features` and fails when that file is missing. The slow check of the modelling tables is included when the environment variable `RUN_SLOW_TESTS` is set to 1.
 
 ---
 
@@ -731,6 +703,6 @@ The current implementation should therefore be considered a machine learning pro
 
 The household contents-value regression adds a second capability. From the first 10, 20, 30 or 50 documented items, an XGBoost and LightGBM blend estimates the total contents value of a household and gives a 70% interval whose lower bound is never below the documented value. On the 13 test households, which were scored once with a weight and margins frozen on the validation set, the test error is $19,544 (WAPE 35.4%) and the interval contains the true value for 87.6% of the households (86.0% of the rows).
 
-The audit in `06_ky_split_and_sampling_audit` shows that this test rate should not be read as the expected rate. The test households are easier than the validation households and the draw of homes was favourable, so a cross-fitted estimate on 31 out-of-sample households gives a rate of about 70%, which matches the target of the interval. The results also reproduce only with XGBoost 3.2.0, which is pinned in `pyproject.toml`.
+The audit in `notebooks/regression/06_ky_split_and_sampling_audit.ipynb` shows that this test rate should not be read as the expected rate. The test households are easier than the validation households and the draw of homes was favourable, so a cross-fitted estimate on 31 out-of-sample households gives a rate of about 70%, which matches the target of the interval. The results also reproduce only with XGBoost 3.2.0, which is pinned in `pyproject.toml`.
 
-The two models are connected through five regression columns, built in `03_ky_regression_feature_merging`. Adding them to the recommendation model did not give a consistent benefit in a controlled 20-seed check, so the original recommendation model remains the model to use and the regression is kept as a separate estimate. Both parts are proofs of concept, and the regression columns should be reconsidered when more household histories are available.
+The two models can be connected through five regression columns (`features.py`). Adding them to the recommendation model did not give a consistent benefit in a controlled 20-seed check, so the original recommendation model remains the model to use and the regression is kept as a separate estimate. Both parts are proofs of concept, and the regression columns should be reconsidered when more household histories are available.

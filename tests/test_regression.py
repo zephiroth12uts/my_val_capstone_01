@@ -39,7 +39,15 @@ def test_predictions_equal_the_saved_test_predictions():
     assert (result["upper"] - saved["upper"]).abs().max() < 0.01
 
 
-@pytest.mark.skipif(not (WORKBOOK.exists() and MODEL_STATE.exists()), reason="needs the data")
+@pytest.mark.skipif(
+    not (
+        WORKBOOK.exists()
+        and MODEL_STATE.exists()
+        and (CLASSIFICATION_PROCESSED_DIR / "model_state_with_reg.csv").exists()
+    ),
+    reason="needs the data and model_state_with_reg.csv (optional, made by "
+    "python -m my_val_capstone_01.regression.features)",
+)
 def test_state_features_equal_the_notebook_output(tmp_path):
     from my_val_capstone_01.regression.features import main
 

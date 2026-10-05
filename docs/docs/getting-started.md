@@ -5,15 +5,15 @@ Install the dependencies with `uv sync` (Python 3.12). The data folder is not tr
 so the raw workbook `myVal_Synthetic_Datasets_release_v2.xlsx` has to be placed in `data/raw/`
 before anything is run.
 
-The two models depend on each other, so the notebooks are run in this order:
+The regression reads one file of the classification side, so the notebooks are run in this order:
 
-1. `notebooks/classification/02_fm_target_definition.ipynb` creates `data/processed/model_state.csv`.
-2. `notebooks/regression/01_ky` to `07_ky` build and evaluate the household-value regression.
-3. `notebooks/classification/03_ky_regression_feature_merging.ipynb` creates
-   `data/processed/classification/model_state_with_reg.csv`.
-4. `notebooks/classification/04_fm_modelling.ipynb` (about 50 minutes) and then `05_fm_inference.ipynb`.
+1. `notebooks/02_fm_target_definition.ipynb` creates `data/processed/model_state.csv`.
+2. `notebooks/regression/01_ky` to `07_ky` build and evaluate the household-value regression. Notebook `03_ky` saves the two models and the final hyperparameters, and notebook `04_ky` saves the blend weight and margins, all as joblib files in `models/regression/`. Notebooks `05_ky` to `07_ky` read them, so `04_ky` has to be run first.
+3. The classification notebooks `notebooks/01_fm` to `05_fm` are the team's originals. They are run as described in the README and do not need the regression.
 
 The regression code can also be run from the project root with
-`python -m my_val_capstone_01.regression.dataset`, `python -m my_val_capstone_01.regression.modeling.train`,
-`python -m my_val_capstone_01.regression.features` and `python -m my_val_capstone_01.regression.plots`.
+`python -m my_val_capstone_01.regression.dataset`, `python -m my_val_capstone_01.regression.modeling.train`
+and `python -m my_val_capstone_01.regression.plots`. The command
+`python -m my_val_capstone_01.regression.features` is optional: it adds five regression columns to the
+recommendation states and writes `data/processed/classification/model_state_with_reg.csv`, which no notebook of this repository uses.
 See `regression.md` for the details of every notebook and folder.

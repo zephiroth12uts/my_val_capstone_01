@@ -3,8 +3,9 @@
 Two groups of features are built here:
 
 * the basket features that the regression models are trained on (``featurize_sample``), and
-* the five regression columns that are merged into the classification dataset
-  (``build_regression_state_features``), see notebook 03_ky_regression_feature_merging in notebooks/classification.
+* the five optional regression columns that can be merged into the classification dataset
+  (``build_regression_state_features``). This merge is not needed by any notebook of this
+  repository, and the classification files are the team's originals.
 """
 
 from pathlib import Path
@@ -313,10 +314,10 @@ def main(
     output_path: Path = CLASSIFICATION_PROCESSED_DIR / "model_state_with_reg.csv",
     diagnostics_path: Path = INTERIM_DIR / "regression_state_diagnostics.csv",
 ):
-    """Write model_state.csv plus the five regression columns (nothing is trained)."""
+    """Optional: write model_state.csv plus the five regression columns (nothing is trained)."""
     from my_val_capstone_01.regression.dataset import rebuild_state_split
 
-    logger.info("Merging the regression into the classification states...")
+    logger.info("Merging the regression into the classification states (optional step)...")
     model_state = pd.read_csv(model_state_path, float_precision="round_trip")
     assets = pd.read_excel(xlsx_path, sheet_name="assets")
     xgb_model, lgbm_model, frozen = load_regression_models(models_dir)
