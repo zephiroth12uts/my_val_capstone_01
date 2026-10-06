@@ -12,6 +12,3 @@ PROCESSED_DIR = DATA_DIR / "processed" / "regression"
 CLASSIFICATION_PROCESSED_DIR = DATA_DIR / "processed" / "classification"
 
 MODELS_DIR = PROJ_ROOT / "models" / "regression"
-
-REPORTS_DIR = PROJ_ROOT / "notebooks" / "regression" / "reports"
-FIGURES_DIR = PROJ_ROOT / "notebooks" / "regression" / "reports" / "figures"

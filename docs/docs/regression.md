@@ -8,9 +8,10 @@ The regression files are kept in their own `regression/` subfolders. The files o
 
 | Folder | Regression | Classification (the team's files) |
 |---|---|---|
-| `notebooks/` | `regression/`: `01_ky` to `07_ky`, the regression pipeline, and `regression/reports/` with its result tables and figures | `01_fm` to `05_fm` |
+| `notebooks/` | `regression/`: `01_ky` to `07_ky`, and the regression pipeline (`08_ky`) | `01_fm` to `05_fm` |
 | `data/interim/` | `regression/`: sheet copies, the property split, predictions and diagnostics | none |
 | `data/processed/` | `regression/`: the modelling tables and the prediction table | `model_state.csv` (read by the regression to rebuild the split) |
+| `modeling/` | `reg_predict_pipeline.py`, the production pipeline written by `08_ky` | `predict.py` |
 | `models/` | `regression/`: the two models, the hyperparameters, and the blend weight and margins, all as joblib files | the Top-1 and ranking Random Forest models in the folder root |
 
 ## Regression notebooks (`notebooks/regression/`, run in this order)
@@ -19,11 +20,12 @@ The regression files are kept in their own `regression/` subfolders. The files o
 |---|---|---|---|
 | `01_ky_eda_dataset` | Exploratory analysis of the four core tables | the workbook in `data/raw/` | parquet copies of the sheets in `data/interim/regression/` |
 | `02_ky_data_preparation` | Builds the target, simulates the baskets, creates the features and applies the grouped split, which is rebuilt from `data/processed/model_state.csv` with the same code as `03_fm_modelling` | the workbook and `model_state.csv` | `train_df`, `val_df`, `test_df` and `unlisted_df` in `data/processed/regression/`, and `property_split.csv` in `data/interim/regression/` |
-| `03_ky_modelling_xgboost_lightgbm` | Fits XGBoost and LightGBM with an 80-candidate random search and chooses the number of trees on validation, without using the test set | `train_df` and `val_df` | the two models (`xgb_log_model.joblib`, `lgbm_log_model.joblib`) and `final_hyperparameters.joblib` in `models/regression/`, the result tables in `notebooks/regression/reports/` and the validation predictions in `data/interim/regression/` |
+| `03_ky_modelling_xgboost_lightgbm` | Fits XGBoost and LightGBM with an 80-candidate random search and chooses the number of trees on validation, without using the test set | `train_df` and `val_df` | the two models (`xgb_log_model.joblib`, `lgbm_log_model.joblib`) and `final_hyperparameters.joblib` in `models/regression/`, and the validation predictions in `data/interim/regression/` |
 | `04_ky_ensemble_and_intervals` | Learns the blend weight and the 70% margins on the validation set | the two models and their validation predictions | `ensemble_weight_and_margins.joblib` in `models/regression/` (one dictionary with the weight, the margin of every N and the confidence level) and the validation intervals in `data/interim/regression/` |
-| `05_ky_test_evaluation` | Scores the test set once with the frozen weight and margins | the two models, the frozen weight and margins, and `test_df` | the result tables in `notebooks/regression/reports/` and the test predictions in `data/interim/regression/` |
+| `05_ky_test_evaluation` | Scores the test set once with the frozen weight and margins | the two models, the frozen weight and margins, and `test_df` | the test predictions in `data/interim/regression/` |
 | `06_ky_split_and_sampling_audit` | Explains why train, validation and test give different success rates, using bootstrap and random re-split experiments, without tuning anything | the models, the frozen weight and margins, and the three modelling tables | no files, the results are shown in the notebook |
 | `07_ky_prediction_table` | Saves the prediction and the 70% interval of every basket row with a train, validation, test or unlisted label | the models, the frozen weight and margins, the modelling tables and `property_split.csv` | `regression_predictions_all_splits.csv` in `data/processed/regression/` |
+| `08_ky_reg_prediction_pipeline` | Writes the production pipeline that turns the documented items and property details of one household into an estimate and a 70% interval | the saved models, the frozen weight and margins and the code in `my_val_capstone_01/regression/` | `modeling/reg_predict_pipeline.py` |
 
 ## Classification notebooks (`notebooks/`)
 
@@ -40,7 +42,6 @@ The folder `my_val_capstone_01/regression/` holds the Python code of the regress
 | `features.py` | the basket features and the five optional regression columns for the classification states, written to `data/processed/classification/model_state_with_reg.csv` | `python -m my_val_capstone_01.regression.features` | regression 02 (the five regression columns are not used by any notebook of this repository) |
 | `modeling/train.py` | the search, the choice of the number of trees, the blend weight and the margins | `python -m my_val_capstone_01.regression.modeling.train` | regression 03 and 04 |
 | `modeling/predict.py` | `predict_household_value` returns the estimate and its 70% interval for one basket, and `checkpoint_for` returns the basket size that a number of documented items reaches | none | new baskets |
-| `plots.py` | the validation curves, the blend weight curve and the success rates per basket size | `python -m my_val_capstone_01.regression.plots` | regression 03, 04 and 05 |
 
 Run the commands from the project root. The modules reproduce the outputs of the notebooks exactly, which is checked by `tests/test_regression.py` (the check of the modelling tables is slow and runs when the environment variable `RUN_SLOW_TESTS` is set to 1). The test set is only scored in regression notebook 05.
 

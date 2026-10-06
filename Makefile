@@ -86,12 +86,6 @@ regression_features: regression_train
 	$(PYTHON_INTERPRETER) -m my_val_capstone_01.regression.features
 
 
-## Draw the regression figures (needs the results of notebook 05_ky_test_evaluation)
-.PHONY: regression_plots
-regression_plots:
-	$(PYTHON_INTERPRETER) -m my_val_capstone_01.regression.plots
-
-
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################

@@ -19,7 +19,7 @@ from sklearn.model_selection import RandomizedSearchCV
 import typer
 from xgboost import XGBRegressor
 
-from my_val_capstone_01.regression.config import INTERIM_DIR, MODELS_DIR, PROCESSED_DIR, REPORTS_DIR
+from my_val_capstone_01.regression.config import INTERIM_DIR, MODELS_DIR, PROCESSED_DIR
 
 app = typer.Typer()
 
@@ -234,7 +234,6 @@ def fit_blend_and_margins(validation_predictions: pd.DataFrame) -> pd.DataFrame:
 def main(
     processed_dir: Path = PROCESSED_DIR,
     models_dir: Path = MODELS_DIR,
-    reports_dir: Path = REPORTS_DIR,
     interim_dir: Path = INTERIM_DIR,
 ):
     """Train the two models and save them with the frozen blend weight and margins."""
@@ -244,7 +243,7 @@ def main(
     fitted = fit_regression_models(train_df, val_df)
     frozen = fit_blend_and_margins(fitted["validation_predictions"])
 
-    for directory in (models_dir, reports_dir, interim_dir):
+    for directory in (models_dir, interim_dir):
         directory.mkdir(parents=True, exist_ok=True)
     joblib.dump(fitted["xgb"]["model"], models_dir / "xgb_log_model.joblib")
     joblib.dump(fitted["lgbm"]["model"], models_dir / "lgbm_log_model.joblib")
@@ -265,13 +264,6 @@ def main(
             for r in hyperparameters.to_dict("records")
         },
         models_dir / "final_hyperparameters.joblib",
-    )
-    fitted["results"].to_csv(reports_dir / "model_results.csv")
-    fitted["xgb"]["curve"].assign(model="xgboost").to_csv(
-        reports_dir / "tree_curve_xgboost.csv", index=False
-    )
-    fitted["lgbm"]["curve"].assign(model="lightgbm").to_csv(
-        reports_dir / "tree_curve_lightgbm.csv", index=False
     )
     fitted["validation_predictions"].to_parquet(
         interim_dir / "tuned_model_predictions.parquet", index=False

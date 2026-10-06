@@ -91,7 +91,8 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 │       └── ensemble_weight_and_margins.joblib
 │
 ├── modeling/
-│   └── predict.py                         (recommendation inference)
+│   ├── predict.py                         (recommendation inference)
+│   └── reg_predict_pipeline.py            (regression production pipeline, written by 08_ky)
 │
 ├── my_val_capstone_01/
 │   ├── config.py, dataset.py, features.py, plots.py   (project template files)
@@ -102,7 +103,6 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 │       ├── config.py
 │       ├── dataset.py
 │       ├── features.py
-│       ├── plots.py
 │       └── modeling/
 │           ├── predict.py
 │           └── train.py
@@ -121,9 +121,7 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 │       ├── 05_ky_test_evaluation.ipynb
 │       ├── 06_ky_split_and_sampling_audit.ipynb
 │       ├── 07_ky_prediction_table.ipynb
-│       └── reports/
-│           ├── figures/
-│           └── (result tables of the regression notebooks)
+│       └── 08_ky_reg_prediction_pipeline.ipynb
 │
 ├── docs/
 │   └── docs/
@@ -152,9 +150,9 @@ The regression code is the subpackage `my_val_capstone_01/regression/`, so it is
 | `models/regression/`                               | two models, hyperparameters, blend weight and margins (all joblib) |                                             |                              |
 | `models/*.joblib` in the root                      |                                                              | the Top-1 and ranking models used by the front end |                             |
 | `notebooks/01_fm` to `05_fm`                       |                                                              | the team's classification notebooks               |                              |
-| `notebooks/regression/`                            | `01_ky` to `07_ky`, with `reports/` and its figures          |                                                   |                              |
+| `notebooks/regression/`                            | `01_ky` to `08_ky`                                           |                                                   |                              |
 | `my_val_capstone_01/regression/`                   | the reusable regression code                                 |                                                   |                              |
-| `my_val_capstone_01/` (other files), `modeling/`, `server.py`, `index.html` |                                             | inference and front end of the recommendation model |                           |
+| `my_val_capstone_01/` (other files), `modeling/predict.py`, `server.py`, `index.html` |                                             | inference and front end of the recommendation model |                           |
 | `tests/`                                           | `test_regression.py`, `regression_conftest.py`               | `test_data.py` (placeholder)                      |                              |
 | `pyproject.toml`, `uv.lock`, `docs/`               |                                                              |                                                   | shared                       |
 
@@ -324,7 +322,7 @@ The notebook applies the frozen weight and margins to the test set and reports:
 - the success rate at row level and at household level, with definitions and an example
 - train, validation and test side by side
 
-The result tables and figures are saved in `notebooks/regression/reports/`. Nothing is tuned or changed after this notebook has been run.
+The result tables and figures are shown in the notebook. Nothing is tuned or changed after this notebook has been run.
 
 #### `06_ky_split_and_sampling_audit.ipynb`
 
@@ -347,6 +345,12 @@ Creation of the prediction table of all baskets.
 
 The notebook predicts every basket row of the four data sets and saves the estimate and the 70% interval, with a label of train, validation, test or unlisted. The interval lower bound is never below the documented value. The checks in this notebook cover consistency and labels only and do not compute accuracy. The table is saved as `data/processed/regression/regression_predictions_all_splits.csv`.
 
+#### `08_ky_reg_prediction_pipeline.ipynb`
+
+Creation of the production pipeline.
+
+The notebook reads the saved models, the frozen blend weight and margins and the code in `my_val_capstone_01/regression/`, and writes the production file `modeling/reg_predict_pipeline.py`. The pipeline takes the documented items and the property details of one household and returns the estimate and its 70% interval. It only loads the joblib files in `models/regression/` and never trains or changes anything.
+
 ---
 
 ## Run Order
@@ -354,7 +358,7 @@ The notebook predicts every basket row of the four data sets and saves the estim
 The regression reads one file of the classification side, so the notebooks are run in this order:
 
 1. `notebooks/02_fm_target_definition.ipynb` creates `data/processed/model_state.csv` from the raw workbook.
-2. `notebooks/regression/01_ky` to `07_ky` build and evaluate the regression. Notebook `02_ky` reads `model_state.csv` to reproduce the classification split. Notebook `03_ky` saves the two models and the final hyperparameters, and notebook `04_ky` saves the blend weight and margins, all as joblib files in `models/regression/`. Notebooks `05_ky` to `07_ky` read those files and need `04_ky` to be run first.
+2. `notebooks/regression/01_ky` to `07_ky` build and evaluate the regression, and `08_ky` writes the production pipeline `modeling/reg_predict_pipeline.py` (use `predict_from_items(items, property_info)` from it to get the estimate and the 70% interval of one household). Notebook `02_ky` reads `model_state.csv` to reproduce the classification split. Notebook `03_ky` saves the two models and the final hyperparameters, and notebook `04_ky` saves the blend weight and margins, all as joblib files in `models/regression/`. Notebooks `05_ky` to `08_ky` read those files and need `04_ky` to be run first.
 3. The classification notebooks `notebooks/01_fm` to `05_fm` are run as described in their own section. The regression is not needed for them.
 
 The regression code can also be run from the project root:
@@ -362,10 +366,9 @@ The regression code can also be run from the project root:
 ```text
 python -m my_val_capstone_01.regression.dataset
 python -m my_val_capstone_01.regression.modeling.train
-python -m my_val_capstone_01.regression.plots
 ```
 
-The same steps are available as Makefile rules (`make regression_dataset`, `make regression_train` and `make regression_plots`). `python -m my_val_capstone_01.regression.features` (rule `make regression_features`) is optional: it adds the five regression columns to the recommendation states and writes `data/processed/classification/model_state_with_reg.csv`, which no notebook of this branch uses.
+The same steps are available as Makefile rules (`make regression_dataset` and `make regression_train`). `python -m my_val_capstone_01.regression.features` (rule `make regression_features`) is optional: it adds the five regression columns to the recommendation states and writes `data/processed/classification/model_state_with_reg.csv`, which no notebook of this branch uses.
 
 The data folder is not tracked by git, so the raw workbook has to be placed in `data/raw/` first.
 
