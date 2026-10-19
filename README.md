@@ -116,6 +116,7 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 │   ├── 03_fm_modelling.ipynb
 │   ├── 04_fm_inference.ipynb
 │   ├── 05_fm_demo.ipynb
+│   ├── 06_fm_candidate_set_rule.ipynb     (candidate-set rule applied to the saved models, see below)
 │   ├── hypothesis_testing_classification/ (anonymisation test, see the section below)
 │   └── regression/
 │       ├── 01_ky_eda_dataset.ipynb
@@ -130,6 +131,9 @@ The project follows a Cookiecutter Data Science structure. Every folder that hol
 ├── docs/
 │   └── docs/
 │       └── regression.md
+│
+├── references/
+│   └── k3_regions_pseudonym_mapping.parquet   (tracked by git, input of dataset_reproduction)
 │
 ├── server.py, index.html                  (web front end of the recommendation model)
 ├── tests/
@@ -153,7 +157,8 @@ The regression code is the subpackage `my_val_capstone_01/regression/`, so it is
 | `data/interim/regression/`                         | sheet copies, property split, predictions, state diagnostics |                                                   |                              |
 | `models/regression/`                               | two models, hyperparameters, blend weight and margins (all joblib) |                                             |                              |
 | `models/*.joblib` in the root                      |                                                              | the Top-1 and ranking models used by the front end |                             |
-| `notebooks/01_fm` to `05_fm`                       |                                                              | the team's classification notebooks               |                              |
+| `notebooks/01_fm` to `06_fm`                       |                                                              | the team's classification notebooks (`06_fm` is the candidate-set rule check) |                              |
+| `references/`                                      |                                                              | pseudonym mapping used to rebuild the anonymised release |                       |
 | `notebooks/regression/`                            | `01_ky` to `08_ky`                                           |                                                   |                              |
 | `notebooks/hypothesis_testing_classification/`, `models/hypothesis_testing/`, `data/processed/hypothesis_testing/` |                                  | anonymisation test of the classification model    |                              |
 | `my_val_capstone_01/regression/`                   | the reusable regression code                                 |                                                   |                              |
@@ -246,6 +251,22 @@ Reusable inference logic is located in:
 ```text
 my_val_capstone_01/modeling/predict.py
 ```
+
+#### `06_fm_candidate_set_rule.ipynb`
+
+Check of the candidate-set rule on the two saved models, without retraining and without changing any model, package or inference file.
+
+The target is always a category that the household has not recorded yet, but the saved models can still rank a category that the household already has. The rule sets the probability of every recorded category below all others and ranks again, which is the way the front-end application uses the recommender. The notebook defines the rule in its own cells and does not import it from the package.
+
+The notebook:
+
+- loads the two saved models from `models/` and rebuilds the holdout partition of notebook 04;
+- reproduces the final holdout results of notebook 04 without the rule;
+- scores the same rows with the recorded categories masked;
+- compares both with three baselines (class prior of all categories, class prior with the recorded categories skipped, random choice among the candidates);
+- shows the rows that change and one example row with the real probabilities.
+
+On the 55 holdout rows the rule raises Top-1 from 28 to 29 correct rows (0.5091 to 0.5273), Top-2 from 39 to 42 (0.7091 to 0.7636) and Top-3 from 46 to 48 (0.8364 to 0.8727), and no row loses a hit. The gain is small because the saved models rarely rank a recorded category first (1 and 3 of 55 rows). With the rule, Top-3 is close to the class prior with the recorded categories skipped (0.8364), so Top-1 and Top-2 are the metrics to read first. This is one split of 55 rows and not an estimate of the effect in the application.
 
 ### Regression notebooks (`notebooks/regression/`)
 
@@ -381,11 +402,18 @@ Six experiment cells are run, each with its own `03` (modelling) and `04` (infer
 
 ```text
 notebooks/hypothesis_testing_classification/
+├── dataset_reproduction/
+│   └── dataset_reproduction.ipynb          (rebuilds the anonymised workbook from v2 and the mapping file)
 ├── source_dataset/ and regions_anonymised/
 │   ├── 01_fm_data_inventory.ipynb, 02_fm_target_definition.ipynb   (once per release)
 │   └── 01_full_feature_set/, 02_no_ai_features/, 03_pure_record/
 │       └── 03_fm_modelling.ipynb, 04_fm_inference.ipynb
-└── ky_model_stability_audit.ipynb
+├── ky_model_stability_audit.ipynb
+├── ky_model_stability_audit_other_models.ipynb
+└── leakage_check/
+    ├── 01_leakage_audit.ipynb
+    ├── 02_point_in_time_stability.ipynb
+    └── 03_candidate_set_stability.ipynb
 ```
 
 Outputs of a cell go to `data/processed/hypothesis_testing/<release>/<feature set>/` (`results_validation.csv`, `results_holdout_test.csv`, train/validation/test parquet) and `models/hypothesis_testing/<release>_<feature set>_{top1,ranking}.joblib`, while notebook 02 of each release writes `data/processed/hypothesis_testing/<release>/model_state.csv`.
@@ -411,12 +439,31 @@ Top-2 and Top-3 come from the ranking forest of each cell, whose setting was sel
 
 Over the 50 splits, the results of a single cell vary by about 4 to 5 percentage points (one standard deviation) from split to split, so the differences between cells in the single-split table above are of the size of ordinary split-to-split variation. The anonymised release stayed within the spread of the source release for the full and no-AI feature sets, with mean paired differences between -0.5 and +1.4 percentage points and a sign that changes from split to split, and it was identical to the source release for the pure-record features, whose predictors do not differ between the releases. Removing the AI features did not lower the scores on average (they were 0.5 to 3.5 points higher without them), and the 12 pure-record predictors scored 2.4 to 5.6 points lower than all 55 predictors while remaining far above a class-prior baseline. These comparisons are descriptive and carry no significance statement, and they rest on 431 prediction states, so they do not show that anonymisation has no effect.
 
+### Other models
+
+`ky_model_stability_audit_other_models.ipynb` repeats the audit above with the Logistic Regression (`max_iter=5000`, otherwise defaults) and CatBoost (MultiClass, balanced class weights, library defaults) on the same 50 customer-grouped splits, with seed-42 models, test-only scoring and no tuning.
+
+### Dataset reproduction
+
+`dataset_reproduction/dataset_reproduction.ipynb` rebuilds the anonymised workbook `Household_Insurance_Synthetic_Dataset_v2_K3_regions.xlsx` in `data/raw/` from `myVal_Synthetic_Datasets_release_v2.xlsx`. The de-branding, rounding, regional generalisation and k = 3 suppression are derived from v2. The only input that cannot be derived is the pseudonyms of `Customer_ID`, `Policy_Number` and `Serial_Number` (salted hash, salt lost), which are read from `references/k3_regions_pseudonym_mapping.parquet` (1,009 rows, tracked by git). The original release of the data owner is optional, in `data/` and never in `data/raw/`, and is used only for a cell-by-cell comparison, in which no cell differs. The rebuild is therefore not an independent reproduction of the pseudonyms.
+
+### Leakage check and point-in-time ladder
+
+`leakage_check/01_leakage_audit.ipynb` counts, over the 431 states, which information is written after the prediction time t. The 12 documented-record predictors are exactly point-in-time. The property record is written after t in 264 states, the customer account in 121 states, 80 of the 94 states with a video have all videos after t, 465 of 2,562 AI analysis rows are written after t, and the customer profile has no timestamp. Static attributes (age band, gender, state, occupation, property type, bedrooms, occupants, valuation, tenure) hold one exported value without a date and cannot be filtered by time.
+
+`leakage_check/02_point_in_time_stability.ipynb` repeats the 50-split comparison of the two releases on a ladder of feature sets: A (12 documented records), B (A plus the 8 generalised predictors, 20), C (B plus 17 other static predictors, 37), D (C plus 5 video predictors, 42), D' (D with the video predictors restricted to videos created by t) and E (D plus 13 AI predictors, 55), for the Random Forest, the Logistic Regression and CatBoost. The result is that the mean difference between the releases (regions minus source) stays within about 1 point in most cells (at most +3.7 points, Logistic Regression at rung B) and is smaller than the variation between splits (one standard deviation of 3 to 6 points), so no anonymisation cost can be separated from the split variation, also when the video predictors are restricted to videos by t. The 8 generalised predictors (step A to B) are the largest gain for the Random Forest and CatBoost and reverse for the Logistic Regression, and the video and AI predictors add nothing that is visible against the spread.
+
+### Candidate-set stability
+
+`leakage_check/03_candidate_set_stability.ipynb` repeats the ladder with a second scoring in which the recorded categories are removed from the ranking before the score is computed ("recorded categories masked"), next to the scoring of the earlier notebooks ("not masked"). It checks whether the conclusion also holds under the way the front-end application uses the recommender. In all 431 states the target is a category that the property has not recorded. Masking can only keep or raise a score, and the gain depends on the model (largest for the Logistic Regression, small for the Random Forest, almost none for CatBoost). The mean difference between the releases stays smaller than the variation between splits under the masked scoring as well (Top-1 within about -1 to +1 point). With at most three candidates Top-3 is correct by construction (77 of 431 states), and the class prior with the recorded categories skipped already reaches 0.877 in Top-3, so the model scores are read against that baseline. The notebook is a simplified analogue of the application, not a replay, and its numbers are not comparable with the acceptance rate in the application documentation.
+
 ### Running it
 
 1. Place both workbooks in `data/raw/`, because the data folder is not tracked by git.
 2. For each release, run notebooks `01_fm_data_inventory` and `02_fm_target_definition` in `notebooks/hypothesis_testing_classification/<release>/`.
 3. Run `03_fm_modelling` and then `04_fm_inference` in each feature-set folder. The first `03` that is run creates `split_assignment.csv`, and the notebooks of the anonymised release stop with an error if this file does not exist, so a source cell has to be run first.
-4. Run `ky_model_stability_audit.ipynb` after all six cells have been run.
+4. Run `ky_model_stability_audit.ipynb` after all six cells have been run. `ky_model_stability_audit_other_models.ipynb` and the three notebooks in `leakage_check/` also need the six cells (they compare with the saved holdout results), but they do not depend on each other, and none of them writes result files. Approximate run times on a laptop CPU are about 1 hour for each audit and for notebook `02`, and about 1.5 hours for notebook `03`.
+5. `dataset_reproduction/dataset_reproduction.ipynb` is needed only to recreate the anonymised workbook when it is not in `data/raw/`. It needs the v2 workbook and `references/k3_regions_pseudonym_mapping.parquet`, and it has to be run before step 2 in that case.
 
 The runs used Python 3.12, pandas 2.2.2, NumPy 1.26.4, scikit-learn 1.5.1, CatBoost 1.2.10, joblib 1.4.2 and pyarrow 21.0.0. Use the same versions for all six cells, because other versions can change the numbers slightly. The `data/` folder is not tracked by git, so the tables listed above have to be rebuilt locally.
 
@@ -426,6 +473,9 @@ The runs used Python 3.12, pandas 2.2.2, NumPy 1.26.4, scikit-learn 1.5.1, CatBo
 - The settings of the ranking forests were selected on the seed-42 split.
 - The customer-grouped split differs from the property-grouped split of the official notebooks and of the historical results.
 - The test measures predictive utility only and does not measure the privacy of the anonymised release.
+- The static attributes have no timestamp, and the leakage check assumes that the exported value equals the value at the prediction time. If this fails, absolute scores with more than the 12 documented-record predictors can be too high, and both releases are expected to be affected in a similar way, which was not tested.
+- Video, AI and customer-profile predictors contain information that is written after the prediction time (see the leakage check), and the audits use fixed, untuned model settings, so their levels are not comparable with the tuned models.
+- The candidate-set scoring is a simplified analogue of the front-end application and not a replay, and `06_fm_candidate_set_rule.ipynb` is a single split of 55 rows.
 
 ---
 
@@ -435,7 +485,7 @@ The regression reads one file of the classification side, so the notebooks are r
 
 1. `notebooks/02_fm_target_definition.ipynb` creates `data/processed/model_state.csv` from the raw workbook.
 2. `notebooks/regression/01_ky` to `07_ky` build and evaluate the regression, and `08_ky` writes the production pipeline `modeling/reg_predict_pipeline.py` (use `predict_from_items(items, property_info)` from it to get the estimate and the 70% interval of one household). Notebook `02_ky` reads `model_state.csv` to reproduce the classification split. Notebook `03_ky` saves the two models and the final hyperparameters, and notebook `04_ky` saves the blend weight and margins, all as joblib files in `models/regression/`. Notebooks `05_ky` to `08_ky` read those files and need `04_ky` to be run first.
-3. The classification notebooks `notebooks/01_fm` to `05_fm` are run as described in their own section. The regression is not needed for them.
+3. The classification notebooks `notebooks/01_fm` to `06_fm` are run as described in their own section (`06_fm` needs the saved models from `03_fm`). The regression is not needed for them.
 4. The anonymisation test in `notebooks/hypothesis_testing_classification/` is independent of the regression and of the notebooks above, and its own section describes the order in which to run it.
 
 The regression code can also be run from the project root:
