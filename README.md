@@ -413,7 +413,8 @@ notebooks/hypothesis_testing_classification/
 └── leakage_check/
     ├── 01_leakage_audit.ipynb
     ├── 02_point_in_time_stability.ipynb
-    └── 03_candidate_set_stability.ipynb
+    ├── 03_candidate_set_stability.ipynb
+    └── 04_attribute_by_attribute.ipynb
 ```
 
 Outputs of a cell go to `data/processed/hypothesis_testing/<release>/<feature set>/` (`results_validation.csv`, `results_holdout_test.csv`, train/validation/test parquet) and `models/hypothesis_testing/<release>_<feature set>_{top1,ranking}.joblib`, while notebook 02 of each release writes `data/processed/hypothesis_testing/<release>/model_state.csv`.
@@ -457,12 +458,16 @@ Over the 50 splits, the results of a single cell vary by about 4 to 5 percentage
 
 `leakage_check/03_candidate_set_stability.ipynb` repeats the ladder with a second scoring in which the recorded categories are removed from the ranking before the score is computed ("recorded categories masked"), next to the scoring of the earlier notebooks ("not masked"). It checks whether the conclusion also holds under the way the front-end application uses the recommender. In all 431 states the target is a category that the property has not recorded. Masking can only keep or raise a score, and the gain depends on the model (largest for the Logistic Regression, small for the Random Forest, almost none for CatBoost). The mean difference between the releases stays smaller than the variation between splits under the masked scoring as well (Top-1 within about -1 to +1 point). With at most three candidates Top-3 is correct by construction (77 of 431 states), and the class prior with the recorded categories skipped already reaches 0.877 in Top-3, so the model scores are read against that baseline. The notebook is a simplified analogue of the application, not a replay, and its numbers are not comparable with the acceptance rate in the application documentation.
 
+### Attribute-by-attribute comparison
+
+`leakage_check/04_attribute_by_attribute.ipynb` takes rung B (20 predictors) and builds ten tables from the two releases: `baseline` (all eight generalised predictors from the source release), eight tables in which one predictor takes its anonymised value, and `all eight`. The 50 customer-grouped splits and the three models are those of the earlier audits, and both scorings of notebook 03 are computed from the same fit. For each split the score of a table minus the score of `baseline` is compared with the variation between splits. The `baseline` and `all eight` tables reproduce rung B of notebook 03 exactly. For every attribute and model the mean difference is smaller than the variation between splits (baseline Top-1 standard deviation about 0.05, single-attribute mean differences from -0.011 to +0.015), no attribute stands out in all three models, and the differences of the single attributes are not additive.
+
 ### Running it
 
 1. Place both workbooks in `data/raw/`, because the data folder is not tracked by git.
 2. For each release, run notebooks `01_fm_data_inventory` and `02_fm_target_definition` in `notebooks/hypothesis_testing_classification/<release>/`.
 3. Run `03_fm_modelling` and then `04_fm_inference` in each feature-set folder. The first `03` that is run creates `split_assignment.csv`, and the notebooks of the anonymised release stop with an error if this file does not exist, so a source cell has to be run first.
-4. Run `ky_model_stability_audit.ipynb` after all six cells have been run. `ky_model_stability_audit_other_models.ipynb` and the three notebooks in `leakage_check/` also need the six cells (they compare with the saved holdout results), but they do not depend on each other, and none of them writes result files. Approximate run times on a laptop CPU are about 1 hour for each audit and for notebook `02`, and about 1.5 hours for notebook `03`.
+4. Run `ky_model_stability_audit.ipynb` after all six cells have been run. `ky_model_stability_audit_other_models.ipynb` and the four notebooks in `leakage_check/` also need the six cells (they compare with the saved holdout results), but they do not depend on each other, and none of them writes result files. Approximate run times on a laptop CPU are about 1 hour for each audit and for notebook `02`, and about 1.5 hours for notebook `03` and about 45 minutes for notebook `04` (CatBoost takes most of it).
 5. `dataset_reproduction/dataset_reproduction.ipynb` is needed only to recreate the anonymised workbook when it is not in `data/raw/`. It needs the v2 workbook and `references/k3_regions_pseudonym_mapping.parquet`, and it has to be run before step 2 in that case.
 
 The runs used Python 3.12, pandas 2.2.2, NumPy 1.26.4, scikit-learn 1.5.1, CatBoost 1.2.10, joblib 1.4.2 and pyarrow 21.0.0. Use the same versions for all six cells, because other versions can change the numbers slightly. The `data/` folder is not tracked by git, so the tables listed above have to be rebuilt locally.
